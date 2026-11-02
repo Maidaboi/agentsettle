@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentSettle — Agent Payments &amp; A2A Settlement on HashKey Chain</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#121826; --panel2:#171f31; --line:#26314a;
+    --text:#e8edf7; --muted:#93a1bd; --accent:#4f8cff; --accent2:#22c58b;
+    --warn:#ffb020; --danger:#ff5c7a; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:var(--accent)}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 18px 60px}
+  header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;justify-content:space-between}
+  h1{margin:0;font-size:34px;letter-spacing:-.5px}
+  h1 .settle{color:var(--accent2)}
+  .tagline{color:var(--muted);margin-top:6px;max-width:620px;line-height:1.5}
+  .track{display:inline-block;margin-top:10px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);font-size:13px;color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .grid{display:grid;gap:16px}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-2{grid-template-columns:1fr 1fr}
+  @media(max-width:860px){.grid-3,.grid-2{grid-template-columns:1fr}}
+  .status{min-width:300px;flex:1;max-width:430px}
+  .status h3,.card h3{margin:0 0 10px;font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .mode{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600}
+  .mode-live{background:rgba(34,197,139,.15);color:var(--accent2);border:1px solid var(--accent2)}
+  .mode-sim{background:rgba(255,176,32,.13);color:var(--warn);border:1px solid var(--warn)}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .kv:last-child{border-bottom:none}
+  .kv b{font-weight:600;text-align:right;word-break:break-all}
+  .simnote{margin-top:14px;padding:11px 13px;border:1px solid var(--warn);border-radius:10px;background:rgba(255,176,32,.07);font-size:13.5px;line-height:1.5}
+  .stepper{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+  .step{flex:1;min-width:150px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-size:13.5px;color:var(--muted)}
+  .step.active{border-color:var(--accent);color:var(--text)}
+  .step.done{border-color:var(--accent2);color:var(--accent2)}
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px}
+  input[type=text],input[type=number]{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
+  button{cursor:pointer;border:none;border-radius:10px;padding:11px 16px;font-size:14.5px;font-weight:600;background:var(--accent);color:#fff}
+  button:disabled{background:#2a3550;color:#6d7b99;cursor:not-allowed}
+  button.secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+  button.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .agent .name{font-size:19px;font-weight:700}
+  .agent .role{color:var(--muted);font-size:13.5px;margin-bottom:10px}
+  .bal{font-size:26px;font-weight:700}
+  .rep{color:var(--warn);font-weight:600}
+  .state{display:inline-block;padding:4px 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--accent);font-weight:600;font-size:13.5px}
+  .report{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px;font-size:14px;line-height:1.55;white-space:pre-wrap}
+  .log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.8px;line-height:1.65;max-height:320px;overflow:auto}
+  .log div{padding:6px 0;border-bottom:1px solid #1c2539}
+  .log .t{color:var(--muted)}
+  .log .hsp{color:var(--accent)}
+  .hash{color:var(--muted);word-break:break-all}
+  code{background:var(--panel2);padding:1px 6px;border-radius:6px;font-size:13px}
+  ol.flow{margin:6px 0 0;padding-left:20px;line-height:1.7;font-size:14.5px}
+  ul{line-height:1.7;font-size:14.5px;margin:6px 0 0;padding-left:20px}
+  .small{font-size:13px;color:var(--muted);line-height:1.55}
+  footer{margin-top:26px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Agent<span class="settle">Settle</span></h1>
+      <p class="tagline">AI agents hire and pay each other on HashKey Chain. Agents can't open bank
+      accounts — so escrow on-chain is their trust layer, and HSP is their settlement rail.</p>
+      <span class="track">HSK Chain Horizon · Agent Payments &amp; A2A Settlement</span>
+    </div>
+
+    <div class="card status">
+      <h3>Chain status</h3>
+      <p style="margin:0 0 8px"><span id="modeBadge" class="mode mode-sim">checking…</span></p>
+      <div class="kv"><span>Network</span><b id="stNetwork">—</b></div>
+      <div class="kv"><span>Chain ID</span><b id="stChainId">—</b></div>
+      <div class="kv"><span>Latest block</span><b id="stBlock">—</b></div>
+      <div class="kv"><span>RPC</span><b id="stRpc">—</b></div>
+      <p class="small" style="margin:10px 0 0">Deployment target for eligibility: <b>HashKey Chain Mainnet (177)</b>.
+      Testnet (133) is for testing first.</p>
+    </div>
+  </header>
+
+  <div class="simnote"><b>Demo ledger — mirrors AgentEscrow.sol logic.</b> Balances, escrow states and the
+  HSP settlement sequence below are simulated in your browser. Deploy the contract to HashKey Chain to run
+  it fully on-chain (testnet first, then mainnet — see the deploy panel).</div>
+
+  <div class="stepper" id="stepper">
+    <div class="step" data-s="1">1 · Buyer posts job</div>
+    <div class="step" data-s="2">2 · Worker accepts</div>
+    <div class="step" data-s="3">3 · Buyer funds escrow</div>
+    <div class="step" data-s="4">4 · Worker delivers</div>
+    <div class="step" data-s="5">5 · Approve → HSP settle → paid</div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card agent">
+      <div class="name">🤖 Buyer Agent</div>
+      <div class="role">Posts jobs, funds escrow, approves delivery</div>
+      <div class="kv"><span>Balance</span><b><span class="bal" id="buyerBal">100.00</span> tHSK</b></div>
+      <div class="kv"><span>Reputation</span><b class="rep">★ <span id="buyerRep">0</span> completed jobs as payer</b></div>
+    </div>
+    <div class="card agent" style="text-align:center">
+      <div class="name">🔒 Escrow</div>
+      <div class="role">AgentEscrow.sol · state machine</div>
+      <p style="margin:8px 0"><span class="state" id="escrowState">No job yet</span></p>
+      <div class="kv"><span>Locked</span><b><span id="escrowBal">0.00</span> tHSK</b></div>
+      <div class="kv"><span>Job</span><b id="jobLabel">—</b></div>
+    </div>
+    <div class="card agent">
+      <div class="name">🛠️ Worker Agent</div>
+      <div class="role">Accepts jobs, delivers work, gets paid</div>
+      <div class="kv"><span>Balance</span><b><span class="bal" id="workerBal">10.00</span> tHSK</b></div>
+      <div class="kv"><span>Reputation</span><b class="rep">★ <span id="workerRep">0</span> completed jobs as payee</b></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:16px">
+    <div class="card">
+      <h3>Play the flow</h3>
+      <label for="jobTitle">Job title</label>
+      <input type="text" id="jobTitle" value="Research 3 new airdrop farms and report back">
+      <div style="height:10px"></div>
+      <label for="jobPrice">Price (tHSK)</label>
+      <input type="number" id="jobPrice" value="2.5" min="0.1" step="0.1">
+      <div style="height:14px"></div>
+      <div class="row">
+        <button id="btnPost">1 · Post job</button>
+        <button id="btnAccept" disabled>2 · Worker accepts</button>
+        <button id="btnFund" disabled>3 · Fund escrow</button>
+      </div>
+      <div style="height:10px"></div>
+      <div class="row">
+        <button id="btnDeliver" disabled>4 · Worker delivers report</button>
+        <button id="btnApprove" disabled>5 · Approve &amp; release</button>
+      </div>
+      <div style="height:10px"></div>
+      <div class="row">
+        <button id="btnRefund" class="danger" disabled>Refund path: deadline passes, no delivery → refund buyer</button>
+        <button id="btnReset" class="secondary">Reset demo</button>
+      </div>
+      <div id="reportBox" style="margin-top:14px;display:none">
+        <label>Worker's delivery (sample research report)</label>
+        <div class="report" id="reportText"></div>
+        <p class="small">Deliverable hash (stored on-chain by <code>submitDelivery</code>):
+        <span class="hash" id="reportHash">—</span></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Activity / escrow log</h3>
+      <div class="log" id="log"><div><span class="t">—</span> Log ready. Post a job to begin.</div></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:16px">
+    <div class="card">
+      <h3>How AgentEscrow.sol works</h3>
+      <ol class="flow">
+        <li><code>createJob(payee, deadline)</code> — buyer posts the job → <b>Created</b></li>
+        <li><code>fundJob(jobId)</code> payable — payment locks in escrow → <b>Funded</b></li>
+        <li><code>submitDelivery(jobId, hash)</code> — worker stores the deliverable hash → <b>Delivered</b></li>
+        <li><code>approveAndRelease(jobId)</code> — buyer approves → <b>Released</b>, reputation +1 for both agents</li>
+        <li>Stuck jobs: <code>refundAfterDeadline(jobId)</code> refunds the buyer if nothing was delivered;
+            <code>claimAfterDeadline(jobId)</code> lets a worker who delivered get paid if the buyer goes silent</li>
+      </ol>
+      <p class="small">State changes always happen before transfers (checks-effects-interactions), so the
+      contract is reentrancy-safe by construction. Reputation lives in on-chain mappings:
+      <code>completedJobsAsPayee</code>, <code>completedJobsAsPayer</code>, <code>reputation</code>.</p>
+    </div>
+
+    <div class="card">
+      <h3>HSP settlement layer</h3>
+      <p class="small" style="margin-top:0">The escrow holds the job terms and reputation. Actual agent-to-agent
+      payment settles over <b>HSP</b> — HashKey's merchant/agent payment protocol
+      (<a href="https://hashkey-merchant.github.io/#/" target="_blank" rel="noopener">docs</a> ·
+      <a href="https://merchant.hsp.finance/" target="_blank" rel="noopener">merchant portal</a>).
+      Step 5 runs HSP's Agentic Payment flow through its MCP tools, shown live in the log:</p>
+      <ul>
+        <li><code>createPayment</code> → <code>getPaymentStatus</code> → <b>completed</b></li>
+        <li>Also available: <code>getBalance</code>, <code>getFee</code>, <code>refundPayment</code>,
+            <code>cancelPayment</code>, <code>getPaymentList</code></li>
+      </ul>
+      <p class="small">In this demo the HSP calls are simulated and labelled as such in the log. Live HSP
+      settlement needs a registered merchant wallet — that integration is the next step.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Network parameters &amp; deploy summary</h3>
+    <div class="grid grid-2">
+      <div>
+        <div class="kv"><span>Mainnet chainId (deployment target)</span><b>177</b></div>
+        <div class="kv"><span>Mainnet RPC</span><b>https://mainnet.hsk.xyz</b></div>
+        <div class="kv"><span>Mainnet explorer</span><b>https://hashkey.blockscout.com</b></div>
+        <div class="kv"><span>Native token</span><b>HSK</b></div>
+      </div>
+      <div>
+        <div class="kv"><span>Testnet chainId (test first)</span><b>133</b></div>
+        <div class="kv"><span>Testnet RPC</span><b>https://testnet.hsk.xyz</b></div>
+        <div class="kv"><span>Testnet explorer</span><b>https://testnet-explorer.hsk.xyz</b></div>
+        <div class="kv"><span>Native token</span><b>tHSK</b></div>
+      </div>
+    </div>
+    <p class="small">Deploy: open <code>contracts/AgentEscrow.sol</code> in Remix → compile (Solidity 0.8.20) →
+    connect a wallet to HashKey testnet (chainId 133), get tHSK from the faucet, deploy and test the full flow →
+    redeploy the same contract on <b>mainnet (chainId 177)</b> for the submission — projects must have their
+    contract on HSK mainnet to be eligible for rewards. Full steps are in the README.</p>
+  </div>
+
+  <footer>AgentSettle · Built by Abednego (@maidaboii) with AI assistance · HSK Chain Horizon Hackathon</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  // ---------- Chain status: mainnet (primary) -> testnet -> simulation ----------
+  var NETWORKS = [
+    {name:"HashKey Chain Mainnet", chainId:177, rpc:"https://mainnet.hsk.xyz", token:"HSK"},
+    {name:"HashKey Chain Testnet", chainId:133, rpc:"https://testnet.hsk.xyz", token:"tHSK"}
+  ];
+  function rpcCall(url, method){
+    return fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({jsonrpc:"2.0", id:1, method:method, params:[]})})
+      .then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json(); })
+      .then(function(j){ if(j.error) throw new Error("rpc error"); return j.result; });
+  }
+  function checkChain(){
+    var badge = document.getElementById("modeBadge");
+    var idx = 0;
+    function tryNet(){
+      if(idx >= NETWORKS.length){
+        badge.textContent = "Simulation mode — RPC unreachable";
+        badge.className = "mode mode-sim";
+        document.getElementById("stNetwork").textContent = "None (offline demo)";
+        document.getElementById("stChainId").textContent = "—";
+        document.getElementById("stBlock").textContent = "—";
+        document.getElementById("stRpc").textContent = "unreachable";
+        return;
+      }
+      var net = NETWORKS[idx++];
+      Promise.all([rpcCall(net.rpc,"eth_chainId"), rpcCall(net.rpc,"eth_blockNumber")])
+        .then(function(res){
+          var cid = parseInt(res[0],16), blk = parseInt(res[1],16);
+          if(cid !== net.chainId) throw new Error("chainId mismatch");
+          badge.textContent = "Live · " + net.name;
+          badge.className = "mode mode-live";
+          document.getElementById("stNetwork").textContent = net.name;
+          document.getElementById("stChainId").textContent = cid;
+          document.getElementById("stBlock").textContent = blk.toLocaleString();
+          document.getElementById("stRpc").textContent = net.rpc;
+        })
+        .catch(tryNet);
+    }
+    tryNet();
+  }
+  checkChain();
+
+  // ---------- Simulated escrow ledger (mirrors AgentEscrow.sol states) ----------
+  var S = null;
+  function freshState(){
+    return { step:0, state:"None", title:"", price:0,
+      buyer:100, worker:10, escrow:0, buyerRep:0, workerRep:0, jobId:null };
+  }
+  function fakeHash(){
+    var h = "0x", chars = "0123456789abcdef";
+    for(var i=0;i<64;i++) h += chars[Math.floor(Math.random()*16)];
+    return h;
+  }
+  function now(){
+    return new Date().toLocaleTimeString([], {hour12:false});
+  }
+  function log(msg, cls){
+    var el = document.getElementById("log");
+    if(S && S.step === 0 && el.dataset.started !== "1"){ el.innerHTML = ""; el.dataset.started = "1"; }
+    var d = document.createElement("div");
+    d.innerHTML = '<span class="t">[' + now() + ']</span> ' + msg;
+    if(cls) d.className = cls;
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
+  }
+  function txLog(action){
+    log(action + '<br><span class="hash">simulated tx: ' + fakeHash() + '</span>');
+  }
+  function fmt(n){ return n.toFixed(2); }
+  function render(){
+    document.getElementById("buyerBal").textContent = fmt(S.buyer);
+    document.getElementById("workerBal").textContent = fmt(S.worker);
+    document.getElementById("escrowBal").textContent = fmt(S.escrow);
+    document.getElementById("buyerRep").textContent = S.buyerRep;
+    document.getElementById("workerRep").textContent = S.workerRep;
+    document.getElementById("escrowState").textContent =
+      S.state === "None" ? "No job yet" : ("Job #" + S.jobId + " · " + S.state);
+    document.getElementById("jobLabel").textContent = S.title ? ("#" + S.jobId) : "—";
+    var steps = document.querySelectorAll("#stepper .step");
+    steps.forEach(function(el){
+      var n = parseInt(el.dataset.s,10);
+      el.className = "step" + (n < S.step ? " done" : (n === S.step ? " active" : ""));
+    });
+    document.getElementById("btnPost").disabled    = S.step !== 0;
+    document.getElementById("btnAccept").disabled  = S.step !== 1;
+    document.getElementById("btnFund").disabled    = S.step !== 2;
+    document.getElementById("btnDeliver").disabled = S.step !== 3;
+    document.getElementById("btnApprove").disabled = S.step !== 4;
+    document.getElementById("btnRefund").disabled  = !(S.step === 3);
+  }
+  function reset(){
+    S = freshState();
+    document.getElementById("reportBox").style.display = "none";
+    var el = document.getElementById("log");
+    el.innerHTML = ""; el.dataset.started = "";
+    log("Demo reset. Post a job to begin.");
+    render();
+  }
+
+  document.getElementById("btnPost").addEventListener("click", function(){
+    var title = document.getElementById("jobTitle").value.trim();
+    var price = parseFloat(document.getElementById("jobPrice").value);
+    if(!title){ alert("Give the job a title first."); return; }
+    if(!(price > 0) || price > S.buyer){ alert("Enter a price between 0 and the buyer's balance."); return; }
+    S.title = title; S.price = price; S.jobId = 1;
+    S.state = "Created"; S.step = 1;
+    txLog("Buyer Agent called <b>createJob(payee, deadline)</b> — job #1 posted: &ldquo;" +
+      title.replace(/</g,"&lt;") + "&rdquo; at " + fmt(price) + " tHSK. Escrow state: <b>Created</b>.");
+    render();
+  });
+
+  document.getElementById("btnAccept").addEventListener("click", function(){
+    S.step = 2;
+    log("Worker Agent reviewed the job terms (price " + fmt(S.price) +
+      " tHSK, deadline 24h, deliverable = research report) and <b>accepted</b>. Waiting for escrow funding.");
+    render();
+  });
+
+  document.getElementById("btnFund").addEventListener("click", function(){
+    S.buyer -= S.price; S.escrow = S.price;
+    S.state = "Funded"; S.step = 3;
+    txLog("Buyer Agent called <b>fundJob(jobId)</b> payable — " + fmt(S.price) +
+      " tHSK locked in AgentEscrow. Escrow state: <b>Funded</b>. The worker can now start safely: payment is guaranteed if the buyer approves, or claimable after the deadline if the buyer goes silent.");
+    render();
+  });
+
+  document.getElementById("btnDeliver").addEventListener("click", function(){
+    var report = "Airdrop farm research — 3 picks\n\n" +
+      "1) StandX (DUSD) — points live, low saturation, official claim window open.\n" +
+      "2) Extended — final points arc ending soon; act before the cutoff.\n" +
+      "3) HSP merchant ecosystem — early agent-payment activity, worth watching for a points program.\n\n" +
+      "Method: checked official docs + on-chain activity for each; skipped anything with unverified claim pages.";
+    document.getElementById("reportText").textContent = report;
+    var h = fakeHash();
+    document.getElementById("reportHash").textContent = h;
+    document.getElementById("reportBox").style.display = "block";
+    S.state = "Delivered"; S.step = 4;
+    txLog("Worker Agent called <b>submitDelivery(jobId, deliverableHash)</b> — report delivered, hash stored on-chain. Escrow state: <b>Delivered</b>.");
+    render();
+  });
+
+  document.getElementById("btnApprove").addEventListener("click", function(){
+    // On-chain release in AgentEscrow, settled over the HSP rail (simulated here).
+    S.state = "Released"; S.step = 5;
+    log("Buyer Agent reviewed the report and called <b>approveAndRelease(jobId)</b>. Escrow state: <b>Released</b>.");
+    log('<span class="hsp">HSP settlement (simulated)</span> — MCP tool <b>createPayment</b>: payment of ' +
+      fmt(S.price) + ' tHSK created, Buyer Agent → Worker Agent, paymentId hsp_' + fakeHash().slice(2,10) + '.', "hsp");
+    log('<span class="hsp">HSP settlement (simulated)</span> — MCP tool <b>getPaymentStatus</b>: status = processing → escrow release confirmed on HashKey Chain.', "hsp");
+    S.escrow = 0; S.worker += S.price;
+    S.buyerRep += 1; S.workerRep += 1;
+    log('<span class="hsp">HSP settlement (simulated)</span> — MCP tool <b>getPaymentStatus</b>: status = <b>completed</b>. Worker Agent balance +' + fmt(S.price) + ' tHSK.', "hsp");
+    txLog("Reputation updated on-chain: <b>completedJobsAsPayer +1</b> (Buyer), <b>completedJobsAsPayee +1</b> (Worker). Both agents are now more trusted for the next job.");
+    render();
+  });
+
+  document.getElementById("btnRefund").addEventListener("click", function(){
+    S.escrow = 0; S.buyer += S.price;
+    S.state = "Refunded"; S.step = 5;
+    txLog("Deadline passed with no delivery. Buyer Agent called <b>refundAfterDeadline(jobId)</b> — " +
+      fmt(S.price) + " tHSK returned from escrow. Escrow state: <b>Refunded</b>. No reputation change. Reset the demo to run the happy path.");
+    render();
+  });
+
+  document.getElementById("btnReset").addEventListener("click", reset);
+
+  S = freshState();
+  render();
+})();
+</script>
+</body>
+</html>
